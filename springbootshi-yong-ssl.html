@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpringBoot使用ssl - 千风殿</title><meta name="description" content="自签CA与证书生成可参考《TLS证书与自签ca》 在上述操作中，仿造serverca的证书签发，再签发一个clientca 于是得到 写一个http接口 @RestController&hellip;"><meta name="generator" content="Publii Open-Source CMS for Static Site"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism-black.css"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid-invert-filter.css"><link rel="canonical" href="https://windshadow-mo.github.io/pub/springbootshi-yong-ssl.html"><link rel="alternate" type="application/atom+xml" href="https://windshadow-mo.github.io/pub/feed.xml" title="千风殿 - RSS"><link rel="alternate" type="application/json" href="https://windshadow-mo.github.io/pub/feed.json" title="千风殿 - JSON"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/assets/css/style.css?v=386585c2c294b1505cd2f6a55ba46ba4"><script type="application/ld+json">{"@context":"http://schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https://windshadow-mo.github.io/pub/springbootshi-yong-ssl.html"},"headline":"SpringBoot使用ssl","datePublished":"2026-06-13T23:32+08:00","dateModified":"2026-06-13T23:59+08:00","description":"自签CA与证书生成可参考《TLS证书与自签ca》 在上述操作中，仿造serverca的证书签发，再签发一个clientca 于是得到 写一个http接口 @RestController&hellip;","author":{"@type":"Person","name":"莫千风","url":"https://windshadow-mo.github.io/pub/authors/mo-qian-feng/"},"publisher":{"@type":"Organization","name":"莫千风"}}</script><noscript><style>img[loading] {
+                    opacity: 1;
+                }</style></noscript><style>.ti{fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}</style></head><body class="post-template"><header class="top js-header"><a class="logo" href="https://windshadow-mo.github.io/pub/">千风殿</a><nav class="navbar js-navbar"><button class="navbar__toggle js-toggle" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><span class="navbar__toggle-box"><span class="navbar__toggle-inner">Menu</span></span></button><ul class="navbar__menu"><li><a href="https://windshadow-mo.github.io/pub/" target="_self">首页</a></li><li><a href="https://windshadow-mo.github.io/pub/tags/" target="_self">博客</a></li></ul></nav><div class="search"><div class="search__overlay js-search-overlay"><div class="wrapper search__overlay-inner"></div></div><button class="search__btn btn--icon js-search-btn" aria-label="Search"><svg height="18" width="18" role="presentation" focusable="false"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#search"/></svg></button></div></header><main class="post"><article class="content"><div class="hero hero--noimage"><header class="hero__content"><div class="wrapper"><h1>SpringBoot使用ssl</h1><div class="feed__meta content__meta"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" class="feed__author">莫千风</a> <time datetime="2026-06-13T23:32" class="feed__date">六月 13, 2026</time></div></div></header></div><div class="entry-wrapper content__entry"><p>自签CA与证书生成可参考<a href="/TLS%E8%AF%81%E4%B9%A6%E4%B8%8E%E8%87%AA%E7%AD%BEca/">《TLS证书与自签ca》</a></p><p>在上述操作中，仿造serverca的证书签发，再签发一个clientca</p><p>于是得到</p><table><thead><tr><th>文件</th><th>用途</th></tr></thead><tbody><tr><td>ws-client.p12</td><td>根ca</td></tr><tr><td>ws-serverca.p12</td><td>服务端证书</td></tr><tr><td>ws-trust.p12</td><td>服务端可信证书列表</td></tr></tbody></table><h2 id="springboot使用ssl">SpringBoot使用ssl</h2><p>写一个http接口</p><pre><code class="language-java">@RestController
+public class HttpsTestController {
+
+    @GetMapping(&quot;/ssl&quot;)
+    public String helloHttps() {
+
+        return &quot;https ws-ssl&quot;;
+    }
+}
+</code></pre><h3 id="http单向认证">http单向认证</h3><p>将上述 ws-serverca.p12 文件放置 resources/ssl/certificate/ 下</p><p>配置文件如下：</p><pre><code class="language-yaml">server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:ssl/certificate/ws-serverca.p12
+    key-store-type: PKCS12
+    key-store-password: ws-servercaKeyPwd
+    key-password: ws-servercaKeyPwd
+    key-alias: ws-serverca
+</code></pre><p>测试结果：浏览器警告并显示不安全连接</p><figure class="post__image"><img loading="lazy" src="./media/files/单项-测试.png" alt="image" data-is-external-image="true"></figure><h3 id="http双向认证">http双向认证</h3><p>将上述 ws-trust.p12 文件放置 resources/ssl/trust/ 下</p><p>配置文件如下：</p><pre><code class="language-yaml">server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:ssl/certificate/ws-serverca.p12
+    key-store-type: PKCS12
+    key-store-password: ws-servercaKeyPwd
+    key-password: ws-servercaKeyPwd
+    key-alias: ws-serverca
+    trust-store: classpath:ssl/trust/ws-trust.p12
+    trust-store-type: PKCS12
+    trust-store-password: ws-trustKeystorePwd
+    client-auth: need # 双向认证
+</code></pre><p>访问接口进行测试，会无法访问</p><figure class="post__image"><img src="./media/files/双向测试1.png" alt="image" data-is-external-image="true"></figure><p>此时给浏览器导入客户端p12证书，重启浏览器后即可访问成功！</p><figure class="post__image"><img loading="lazy" src="./media/files/导入证书.png" alt="image" data-is-external-image="true"></figure></div><footer class="content__footer"><div class="entry-wrapper"><p class="content__updated">This article was updated on 六月 13, 2026</p><div class="content__actions"><ul class="content__tag"><li><a href="https://windshadow-mo.github.io/pub/tags/springboot/">SpringBoot</a></li></ul><div class="content__share"><button class="btn--icon content__share-button js-content__share-button"><svg width="20" height="20" aria-hidden="true"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#share"></use></svg> <span>Share It</span></button><div class="content__share-popup js-content__share-popup"></div></div></div><div class="content__bio bio"><div><h3 class="h4 bio__name"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" rel="author">莫千风</a></h3><div class="bio__desc"><p>殿主</p></div></div></div></div></footer></article></main><footer class="footer footer--glued"><div class="wrapper"><div class="footer__copyright"><p>© 2015-2025 千风殿</p></div><button id="backToTop" class="footer__bttop" aria-label="Back to top" title="Back to top"><svg width="20" height="20"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#toparrow"/></svg></button></div></footer><script defer="defer" src="https://windshadow-mo.github.io/pub/assets/js/scripts.min.js?v=dafec4f87fead6718cb125f0b0fc8441"></script><script>window.publiiThemeMenuConfig={mobileMenuMode:'sidebar',animationSpeed:300,submenuWidth: 'auto',doubleClickTime:500,mobileMenuExpandableSubmenus:true,relatedContainerForOverlayMenuSelector:'.top'};</script><script>var images = document.querySelectorAll('img[loading]');
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                images[i].classList.add('is-loaded');
+            } else {
+                images[i].addEventListener('load', function () {
+                    this.classList.add('is-loaded');
+                }, false);
+            }
+        }</script><script defer="defer" src="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism.js"></script><script src="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid.min.js"></script><script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script></body></html>

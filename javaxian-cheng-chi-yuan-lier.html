@@ -1,0 +1,234 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Java线程池原理（二） - 千风殿</title><meta name="description" content="承接上文，我们知道了线程池可以复用线程去执行任务，Executors工具类通过设置不同的参数来得到一些特性的线程池，那么继续深入，了解线程池是如何实现线程复用、核心线程的维持、非核心线程的存活控制，这些核心功能整体是如何运作的。 此小节重点讲线程池线程复用的机制，遇到一些影不易读懂的代码我们可以跳过。 首先，线程池executor方法是线程池的入口，顺着该方法分析，不难发现一个关键的方法：addWorker(Runnable firstTask, boolean&hellip;"><meta name="generator" content="Publii Open-Source CMS for Static Site"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism-black.css"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid-invert-filter.css"><link rel="canonical" href="https://windshadow-mo.github.io/pub/javaxian-cheng-chi-yuan-lier.html"><link rel="alternate" type="application/atom+xml" href="https://windshadow-mo.github.io/pub/feed.xml" title="千风殿 - RSS"><link rel="alternate" type="application/json" href="https://windshadow-mo.github.io/pub/feed.json" title="千风殿 - JSON"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/assets/css/style.css?v=386585c2c294b1505cd2f6a55ba46ba4"><script type="application/ld+json">{"@context":"http://schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https://windshadow-mo.github.io/pub/javaxian-cheng-chi-yuan-lier.html"},"headline":"Java线程池原理（二）","datePublished":"2026-06-13T23:38+08:00","dateModified":"2026-06-13T23:57+08:00","description":"承接上文，我们知道了线程池可以复用线程去执行任务，Executors工具类通过设置不同的参数来得到一些特性的线程池，那么继续深入，了解线程池是如何实现线程复用、核心线程的维持、非核心线程的存活控制，这些核心功能整体是如何运作的。 此小节重点讲线程池线程复用的机制，遇到一些影不易读懂的代码我们可以跳过。 首先，线程池executor方法是线程池的入口，顺着该方法分析，不难发现一个关键的方法：addWorker(Runnable firstTask, boolean&hellip;","author":{"@type":"Person","name":"莫千风","url":"https://windshadow-mo.github.io/pub/authors/mo-qian-feng/"},"publisher":{"@type":"Organization","name":"莫千风"}}</script><noscript><style>img[loading] {
+                    opacity: 1;
+                }</style></noscript><style>.ti{fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}</style></head><body class="post-template"><header class="top js-header"><a class="logo" href="https://windshadow-mo.github.io/pub/">千风殿</a><nav class="navbar js-navbar"><button class="navbar__toggle js-toggle" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><span class="navbar__toggle-box"><span class="navbar__toggle-inner">Menu</span></span></button><ul class="navbar__menu"><li><a href="https://windshadow-mo.github.io/pub/" target="_self">首页</a></li><li><a href="https://windshadow-mo.github.io/pub/tags/" target="_self">博客</a></li></ul></nav><div class="search"><div class="search__overlay js-search-overlay"><div class="wrapper search__overlay-inner"></div></div><button class="search__btn btn--icon js-search-btn" aria-label="Search"><svg height="18" width="18" role="presentation" focusable="false"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#search"/></svg></button></div></header><main class="post"><article class="content"><div class="hero hero--noimage"><header class="hero__content"><div class="wrapper"><h1>Java线程池原理（二）</h1><div class="feed__meta content__meta"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" class="feed__author">莫千风</a> <time datetime="2026-06-13T23:38" class="feed__date">六月 13, 2026</time></div></div></header></div><div class="entry-wrapper content__entry"><p>承接上文，我们知道了线程池可以复用线程去执行任务，<code>Executors</code>工具类通过设置不同的参数来得到一些特性的线程池，那么继续深入，了解线程池是如何实现线程复用、核心线程的维持、非核心线程的存活控制，这些核心功能整体是如何运作的。</p><h2 id="线程复用、核心线程的维持、非核心线程的存活控制">线程复用、核心线程的维持、非核心线程的存活控制</h2><h3 id="线程复用">线程复用</h3><p>此小节重点讲线程池线程复用的机制，遇到一些影不易读懂的代码我们可以跳过。</p><p>首先，线程池executor方法是线程池的入口，顺着该方法分析，不难发现一个关键的方法：<code>addWorker(Runnable firstTask, boolean core)</code>，这个方法是负责添加Worker以执行任务的。</p><p>那么我们目的很明确，在此只需要关心3个点：1、具体添加了什么。2、任务怎么被执行的。3、firstTask和core参数怎么运用的。</p><h4 id="threadpoolexecutor的addworker方法">ThreadPoolExecutor的addWorker方法</h4><p><strong>这里我们先入为主一波：</strong></p><p>猜测该方法添加了一个叫Worker的东西，Worker内部使用一个boolean变量标识其内部Thread的性质是核心还是非核心线程，按照我们的常规的编程思路确实容易这样想。</p><p>接下来分析addWorker方法。</p><pre><code class="language-java">private boolean addWorker(Runnable firstTask, boolean core) {
+        retry:/// java 类似goto语句的语法，此处不重要
+        for (;;) {
+            int c = ctl.get();
+            int rs = runStateOf(c);
+
+            // Check if queue empty only if necessary.
+            if (rs &gt;= SHUTDOWN &amp;&amp;
+                ! (rs == SHUTDOWN &amp;&amp;
+                   firstTask == null &amp;&amp;
+                   ! workQueue.isEmpty()))
+                return false;
+
+            for (;;) {
+                int wc = workerCountOf(c);
+                if (wc &gt;= CAPACITY ||
+                    wc &gt;= (core ? corePoolSize : maximumPoolSize))
+                    return false;
+                if (compareAndIncrementWorkerCount(c))
+                    break retry;
+                c = ctl.get();  // Re-read ctl
+                if (runStateOf(c) != rs)
+                    continue retry;
+                // else CAS failed due to workerCount change; retry inner loop
+            }
+        }
+        /// 0.1、前半段的代码的作用是通过cas进行自旋，先不必关心自旋干啥
+        /// 0.2、只需知道 core 参数的作用也是参与到了其中，到此 core 参数的使命已经完成！后面已经用不到了
+        boolean workerStarted = false;/// 1、标识worker是否启动的变量
+        boolean workerAdded = false;/// 2、标识worker是否已经添加的变量
+        Worker w = null;/// 3、声明一个worker
+        try {
+            w = new Worker(firstTask);/// 4、new 一个worker
+            final Thread t = w.thread;/// 5、拿到 worker 内的线程
+            if (t != null) {
+                final ReentrantLock mainLock = this.mainLock;
+                mainLock.lock();
+                try {
+                    // Recheck while holding lock.
+                    // Back out on ThreadFactory failure or if
+                    // shut down before lock acquired.
+                    int rs = runStateOf(ctl.get());
+
+                    if (rs &lt; SHUTDOWN ||
+                        (rs == SHUTDOWN &amp;&amp; firstTask == null)) {
+                        if (t.isAlive()) // precheck that t is startable
+                            throw new IllegalThreadStateException();
+                        workers.add(w);/// 6、经过一系列状态等判断后，添加worker到workers中，阅读源码发现workers是ThreadPoolExecutor内部的一个保存worker的HashSet
+                        int s = workers.size();
+                        if (s &gt; largestPoolSize)
+                            largestPoolSize = s;
+                        workerAdded = true;
+                    }
+                } finally {
+                    mainLock.unlock();
+                }
+                if (workerAdded) {
+                    t.start();/// 7、worker添加成功，启动worker内的线程
+                    workerStarted = true;/// 8、worker启动成功
+                }
+            }
+        } finally {
+            if (! workerStarted)
+                addWorkerFailed(w);
+        }
+        return workerStarted;
+    }
+</code></pre><p>总结：addWorker方法添加一个<code>Worker</code>到<code>ThreadPoolExecutor</code>保存worker的一个HashSet中，之后<code>Worker</code>内的Thread被启动。而firstTask参数作为<code>Worker</code>构造参数被使用，core参数仅参与了一个cas自旋操作，和<code>Worker</code>没啥关系。</p><p>显然，<strong>我们先入为主的想法并不正确</strong>。</p><p>前文讲到线程池内是通过<code>Worker</code>干活的，其内部有一个Thread在工作，<code>Worker</code>是线程池实现线程复用的关键。要了解线程池线程复用等原理势必要先了解<code>Worker</code>对象如何工作的。</p><h4 id="worker">Worker</h4><p><code>Worker</code>类是<code>ThreadPoolExecutor</code>的私有非静态内部类，继承了AQS且实现了<code>Runnable</code>接口，Java中的AQS在此不展开讲，到这里我们只需知道<code>Worker</code>继承了AQS使自身可对外提供加解锁的方法，外部的合理编码保证并发访问的安全性即可，即使不太了解AQS也没关系。通过<code>Worker</code>类的方法名也可大致知道是干什么的。</p><pre><code class="language-java"> private final class Worker extends AbstractQueuedSynchronizer implements Runnable {
+        private static final long serialVersionUID = 6138294804551838833L;
+
+        /// 内部维护了一个线程，该线程通过线程池的线程工厂创建
+        final Thread thread;
+        /// 第一个任务
+        Runnable firstTask;
+        /// 该参数保存已经完成的任务的数量
+        volatile long completedTasks;
+
+        /// 构造方法，传入第一个任务，
+        Worker(Runnable firstTask) {
+            setState(-1); // inhibit interrupts until runWorker
+            this.firstTask = firstTask;
+            /// 将自身引用传入，通过线程池的线程工厂创建线程，
+            this.thread = getThreadFactory().newThread(this);
+        }
+        /// ...
+ }
+</code></pre><p>很显然，<code>Worker</code>内部的Thread运行时，会调用<code>Worker</code>自身的run方法，看看<code>Worker</code>的run方法做了哪些事。</p><pre><code class="language-java"> public void run() {
+            runWorker(this);/// 调用外部ThreadPoolExecutor实例的runWorker方法
+}
+</code></pre><h4 id="threadpoolexecutor的runworker方法">ThreadPoolExecutor的runWorker方法</h4><p>来到<code>ThreadPoolExecutor</code>的runWorker方法，这个方法极其关键！！！</p><pre><code class="language-java">final void runWorker(Worker w) {
+        Thread wt = Thread.currentThread();/// 1、获取当前线程，也就是worker内的线程
+        Runnable task = w.firstTask;/// 2、获取worker内的firstTask，第一个任务
+        w.firstTask = null;/// 3、worker内的firstTask置空
+        w.unlock(); // allow interrupts
+        boolean completedAbruptly = true;/// 4、worker内的线程是否突然结束的标志
+        try {
+            while (task != null || (task = getTask()) != null) {/// 5、判断任务是否为空，否则通过getTask方法从工作队列获取任务
+                w.lock();
+                // If pool is stopping, ensure thread is interrupted;
+                // if not, ensure thread is not interrupted.  This
+                // requires a recheck in second case to deal with
+                // shutdownNow race while clearing interrupt
+                if ((runStateAtLeast(ctl.get(), STOP) ||
+                     (Thread.interrupted() &amp;&amp;
+                      runStateAtLeast(ctl.get(), STOP))) &amp;&amp;
+                    !wt.isInterrupted())
+                    wt.interrupt();
+                try {
+                    beforeExecute(wt, task);/// 6、调用任务之前的通知，空实现，子类可覆盖实现
+                    Throwable thrown = null;
+                    try {
+                        task.run();/// 7、调用任务的run方法执行任务！！！
+                    } catch (RuntimeException x) {
+                        thrown = x; throw x;
+                    } catch (Error x) {
+                        thrown = x; throw x;
+                    } catch (Throwable x) {
+                        thrown = x; throw new Error(x);
+                    } finally {
+                        afterExecute(task, thrown);/// 8、调用任务结束之后的通知，空实现，子类可覆盖实现
+                    }
+                } finally {
+                    task = null;/// 9、任务执行结束后，置空
+                    w.completedTasks++;
+                    w.unlock();
+                }
+            }
+            completedAbruptly = false;/// 10、worker执行任务期间没有抛异常，worker内的线程正常结束工作
+        } finally {
+            processWorkerExit(w, completedAbruptly); /// 11、处理worker的退出逻辑
+        }
+    }
+</code></pre><p>到这里，线程复用的机制很明了了：<strong>通过循环不断从工作队列中获取任务并执行</strong>；</p><p>不难总结出<code>Worker</code>的工作机制：<strong>worker通过实现Runnable接口，内部维护一个Thread线程对象，将自身作为“跳板”，优先执行自身初始化时携带的任务，之后不断消费（执行）线程池工作队列中的任务，直到队列中任务没有任务为止，worker的任务就结束了。</strong></p><p>用图表示<code>ThreadPoolExecutor</code>的runWorker方法主要的执行过程如下：</p><figure class="post__image"><img loading="lazy" src="./media/files/线程池runWorker方法.svg" alt="image" data-is-external-image="true"></figure><p>不过目前为止，我们还是没发现和核心线程与非核心线程相关的痕迹，带着疑问继续往下走。</p><h3 id="核心线程的维持、非核心线程的存活控制">核心线程的维持、非核心线程的存活控制</h3><p>阅读<code>ThreadPoolExecutor</code>的runWorker方法，不难发现，每个<code>Worker</code>对象结束使命后，都会走到<code>ThreadPoolExecutor</code>的processWorkerExit方法执行退出逻辑。该方法入参除了<code>Worker</code>对象以外还需要传入一个boolean类型的completedAbruptly参数，见明之意，该参数表示该<code>Worker</code>对象是否是“突然结束”，不难发现只有任务task执行期间抛出异常或error，<code>Worker</code>对象才算是“突然结束”，completedAbruptly为true，反之正常结束，completedAbruptly为false。</p><h4 id="threadpoolexecutor的processworkerexit方法">ThreadPoolExecutor的processWorkerExit方法</h4><p>综上所述，processWorkerExit方法职责就是处理<code>Worker</code>对象正常与非正常的结束，也可以理解为对<code>Worker</code>的回收。</p><pre><code class="language-java">private void processWorkerExit(Worker w, boolean completedAbruptly) {
+        if (completedAbruptly) // If abrupt, then workerCount wasn&#39;t adjusted
+            decrementWorkerCount();/// 1、从上一行的英文注释和该方法的意义可知，对于非正常的结束的worker，需要调整当前线程池记录的worker数量，这里暂时不必关心如何调整
+
+        final ReentrantLock mainLock = this.mainLock;
+        mainLock.lock();
+        try {
+            completedTaskCount += w.completedTasks;/// 2、记录worker完成的任务数量到总完成数上
+            workers.remove(w);/// 3、从HashSet中移除该worker
+        } finally {
+            mainLock.unlock();
+        }
+
+        tryTerminate();
+
+        int c = ctl.get();
+        if (runStateLessThan(c, STOP)) {/// 4、如果此时线程池状态不是结束状态
+            if (!completedAbruptly) {/// 5、如果worker正常结束，if 内的逻辑可不关心
+                int min = allowCoreThreadTimeOut ? 0 : corePoolSize;
+                if (min == 0 &amp;&amp; ! workQueue.isEmpty())
+                    min = 1;
+                if (workerCountOf(c) &gt;= min)
+                    return; // replacement not needed
+            }
+            addWorker(null, false);/// 6、worker非正常结束，说明执行任务时抛了异常，需要补充一个新的worker，因为是补充的，其firstTask是null，而且是以非核心线程的设置去补充的
+        }
+    }
+</code></pre><p>小总结一下processWorkerExit主要干了几件事：</p><ol><li>记录<code>Worker</code>对象完成的任务数到总记录中</li><li>移除该<code>Worker</code>对象</li><li>处理非正常结束<code>Worker</code>对象时，调整线程池记录的worker数量，补充一个新的worker且是以非核心线程的设定去补充的</li></ol><p>提一下为什么<code>Worker</code>非正常结束时要补充新的<code>Worker</code>：</p><ul><li>再仔细看runWorker方法，因为<code>Worker</code>非正常结束说明任务task的run方法抛出了异常（或error），尽管做了try-catch处理，作者的做法是把异常继续往抛出，而处理<code>Worker</code>的回收工作processWorkerExit方法是在finally块执行的，也就是说processWorkerExit方法执行完之后，异常就要被抛出去了，虚拟机接受到异常之后，就会销毁该线程，也就是销毁<code>Worker</code>内的Thread（线程死亡），此时需要补充新的<code>Worker</code>继续干活。</li><li><em>此处给读者留下一个小思考：既然runWorker方法catch到了异常或error，可以不抛出去吗？</em></li></ul><p>不过跟踪到这里还是没发现核心线程与非核心线程相关的操作，而且在补充新的worker时，还是以非核心线程去补充的，这也是疑问点，并且如果每个<code>Worker</code>使命结束后都要移除了，<code>Worker</code>内的线程也执行完代码也要结束生命了，说好的核心线程不会被销毁呢？</p><h4 id="threadpoolexecutor的gettask方法">ThreadPoolExecutor的getTask方法</h4><p>回过头看，我们还差一个方法没有分析，那就是<code>ThreadPoolExecutor</code>的getTask方法，在runWorker方法中<code>Worker</code>通过getTask从工作队列中获取任务，不难得出：<strong>如果获取的任务为null，Worker将被回收</strong>。而工作队列是阻塞队列，所以如果<code>Worker</code>在获取任务时被阻塞，那么就不会被回收，从而实现<code>Worker</code>内Thread的“常驻”效果，这确实是个思路。话不多说进源码。</p><p>下列代码笔者将保留原生的官方英文注释，增加自己的注释。</p><pre><code class="language-java">private Runnable getTask() {
+        /// 1、超时的标记变量，官方注释很明了：是否是因为上一次执行阻塞队列poll 方法导致的超时
+        boolean timedOut = false; // Did the last poll() time out?
+
+        for (;;) {
+            int c = ctl.get();
+            int rs = runStateOf(c);
+            
+            /// 2、注意这里的判断，如果为true，说明线程池状态不处于running，如果是shutdow，则再判断工作队列是否为空，为空则返回null，其余的状态也返回null，worker将被回收
+            // Check if queue empty only if necessary.
+            if (rs &gt;= SHUTDOWN &amp;&amp; (rs &gt;= STOP || workQueue.isEmpty())) {
+                decrementWorkerCount();
+                return null;
+            }
+    
+            int wc = workerCountOf(c);/// 3、获取当前worker数量
+            
+            /// 4、当允许核心线程超时（默认是不允许false）或当前worker数量大于核心线程数时，表示该worker可能需要回收，这里利用一个boolean来标记
+            // Are workers subject to culling?
+            boolean timed = allowCoreThreadTimeOut || wc &gt; corePoolSize;
+            /// 5、满足指定条件（注意两个逻辑或运算以及逻辑或运算的特点），说明该worker的确需要回收
+            if ((wc &gt; maximumPoolSize || (timed &amp;&amp; timedOut))
+                &amp;&amp; (wc &gt; 1 || workQueue.isEmpty())) {
+                if (compareAndDecrementWorkerCount(c))/// 6、尝试比较并将worker总记录数减1，成功返回null，失败则进入下一次循环
+                    return null;
+                continue;
+            }
+
+            try {
+                Runnable r = timed ? 
+                    workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :/// 7、该worker可能需要回收，则调用 poll 方法等待一定时间
+                    workQueue.take();/// 8、该worker不需要回收，take 方法一直等待直到获取到任务
+                if (r != null)
+                    return r;
+                timedOut = true;/// 9、如果为null，那一定是调用 poll 方法超时了
+            } catch (InterruptedException retry) {/// 10、捕获队列出队时可能的中断异常，暂时不必关系
+                timedOut = false;
+            }
+        }
+    }
+</code></pre><p>这段代码比较短但是比较精妙，需要反复揣摩，下面贴出笔者制作的流程图</p><figure class="post__image"><img loading="lazy" src="./media/files/ThreadPoolExecutor的getTask方法.svg" alt="image" data-is-external-image="true"></figure><p>到此，终于看到线程池七八成左右的真身了：runWorker方法使worker不断执行任务和任务通知，processWorkerExit方法负责worker的回收工作，而<strong>getTask方法负责从工作队列获取任务进一步控制worker内Thread的阻塞等待，进一步控制worker的回收，从而实现核心线程的常驻效果和非核心线程的存活控制。</strong></p><h2 id="提交优先级与执行优先级">提交优先级与执行优先级</h2><p>有如下程序</p><pre><code class="language-java"> public static void main(String[] args) {	
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(10,20,
+                300L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue&lt;&gt;(10),
+                new ThreadPoolExecutor.AbortPolicy());
+
+        for (int i = 1; i &lt;= 40; i++) {
+
+            System.out.println(&quot;execute: &quot; + i);
+            final int n = i;
+            executor.execute(() -&gt; {
+
+                System.out.println(&quot;start run number: &quot; + n);
+                try {
+                    TimeUnit.SECONDS.sleep(100000L);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        executor.shutdown();
+ }
+</code></pre><p>问：提交到第几个任务（i = ?）时，线程池拒绝执行任务而抛出异常？</p><p>答：i = 31时。</p><p>线程池可接受的最大任务数量为：最大线程数+工作队列容量=30。上述每个任务都进行了一次长时间睡眠，显然for循环体积任务执行完之前，线程池内没有一个任务执行完。</p><p>值得注意的是，控制台打印的“start run number: {n}”字符串，应该是1到10左右先被打印，其次是21到130后被打印，最后是11到120区间的数字被打印，而不是我们生活中任务认为的“先提交就先得到执行”。</p><p>于是结合addWorker方法得出线程池<strong>提交优先级</strong>：</p><p>核心线程 &gt; 工作队列 &gt; 非核心线程</p><p>于是结合getTask方法得出线程池<strong>执行优先级</strong>：</p><p>核心线程 &gt; 非核心线程 &gt; 工作队列</p><h2 id="小结">小结</h2><p>通过以上4个方法的解读，我们可以重新认识worker对象：</p><ul><li>通俗的说每个worker被创建之后，其使命就是不断从工作队列领取任务去执行，在<strong>无任务可执行</strong>（不是任务全部执行完毕，两者概念差别很大），即领取不到任务之后，就要被回收。</li></ul><p>不仅如此，核心线程与非核心线程也要重新理解：</p><ul><li>核心线程：worker对象内的线程在获取任务前，线程池状态处于running，此时若当前worker数（反应线程池内的线程数）小于等于设置的核心线程数，该线程以<strong>poll</strong>方式方式获取任务，若工作队列无任务，则该线程将一直等待新的任务提交进来，该线程也就顺理成章的成为线程池常驻线程，也就是核心线程</li><li>非核心线程：worker对象内的线程在获取任务前，线程池状态处于running，此时若当前worker数（反应线程池内的线程数）大于设置的核心线程数，该线程以<strong>take</strong>方式方式获取任务，若工作队列无任务，则该线程将等待新的任务提交进来，等待时长为<strong>keepAliveTime</strong>，超时之后便会被对应worker被回收，等待期间该线程也就成为线程池非核心线程。</li></ul><p>所以每个worker内的线在启动工作期间都是相同的性质，不分核心与非核心，只有工作队列<strong>无任务可执行</strong>时，才能明确线程的性质是核心还是非核心，同时也决定了worker的回收与否（既分高下，也决生死？！）。</p><p>回过头来看addWorker方法中表示线程类型的core参数，也只是参与了当前worker数与核心线程数或非核心线程数的比较，再无他用，这也说的通了。</p><p>在阅读这些方法中，我们跳过了一些“影响阅读”的代码，如worker自身的lock和unlock究是为了防止啥，<code>ThreadPoolExecutor</code>成员变量中<code>ReentrantLock</code>的mainLock保证了什么的线程安全，以及线程池自身的其它功能，如线程池的worker数量和状态等如何感知的……请听下回合分解。</p></div><footer class="content__footer"><div class="entry-wrapper"><p class="content__updated">This article was updated on 六月 13, 2026</p><div class="content__actions"><ul class="content__tag"><li><a href="https://windshadow-mo.github.io/pub/tags/javaduo-xian-cheng/">Java多线程</a></li></ul><div class="content__share"><button class="btn--icon content__share-button js-content__share-button"><svg width="20" height="20" aria-hidden="true"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#share"></use></svg> <span>Share It</span></button><div class="content__share-popup js-content__share-popup"></div></div></div><div class="content__bio bio"><div><h3 class="h4 bio__name"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" rel="author">莫千风</a></h3><div class="bio__desc"><p>殿主</p></div></div></div></div></footer></article></main><footer class="footer footer--glued"><div class="wrapper"><div class="footer__copyright"><p>© 2015-2025 千风殿</p></div><button id="backToTop" class="footer__bttop" aria-label="Back to top" title="Back to top"><svg width="20" height="20"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#toparrow"/></svg></button></div></footer><script defer="defer" src="https://windshadow-mo.github.io/pub/assets/js/scripts.min.js?v=dafec4f87fead6718cb125f0b0fc8441"></script><script>window.publiiThemeMenuConfig={mobileMenuMode:'sidebar',animationSpeed:300,submenuWidth: 'auto',doubleClickTime:500,mobileMenuExpandableSubmenus:true,relatedContainerForOverlayMenuSelector:'.top'};</script><script>var images = document.querySelectorAll('img[loading]');
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                images[i].classList.add('is-loaded');
+            } else {
+                images[i].addEventListener('load', function () {
+                    this.classList.add('is-loaded');
+                }, false);
+            }
+        }</script><script defer="defer" src="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism.js"></script><script src="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid.min.js"></script><script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script></body></html>
