@@ -14,8 +14,8 @@
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/fu-wen-ben.html"/>
-        <id>https://windshadow-mo.github.io/pub/fu-wen-ben.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/fu-wen-ben/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/fu-wen-ben/</id>
             <category term="Docker"/>
 
         <updated>2026-06-14T01:15:05+08:00</updated>
@@ -43,8 +43,8 @@
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/springwebyi-chang-chu-li.html"/>
-        <id>https://windshadow-mo.github.io/pub/springwebyi-chang-chu-li.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/springwebyi-chang-chu-li/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/springwebyi-chang-chu-li/</id>
             <category term="Spring"/>
 
         <updated>2026-06-14T00:03:19+08:00</updated>
@@ -126,8 +126,8 @@ public class BasicErrorController extends AbstractErrorController {
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/springshu-ju-xiao-yan-ti-xi.html"/>
-        <id>https://windshadow-mo.github.io/pub/springshu-ju-xiao-yan-ti-xi.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/springshu-ju-xiao-yan-ti-xi/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/springshu-ju-xiao-yan-ti-xi/</id>
             <category term="Spring"/>
 
         <updated>2026-06-14T00:02:41+08:00</updated>
@@ -377,8 +377,8 @@ public class BeanValidatedController {
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/tlszheng-shu-yu-zi-qian-ca.html"/>
-        <id>https://windshadow-mo.github.io/pub/tlszheng-shu-yu-zi-qian-ca.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/tlszheng-shu-yu-zi-qian-ca/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/tlszheng-shu-yu-zi-qian-ca/</id>
             <category term="TLS/SSL"/>
 
         <updated>2026-06-14T00:01:55+08:00</updated>
@@ -666,8 +666,8 @@ main
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/bean-validation-2.html"/>
-        <id>https://windshadow-mo.github.io/pub/bean-validation-2.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/bean-validation-2/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/bean-validation-2/</id>
             <category term="Java特项"/>
 
         <updated>2026-06-13T23:41:34+08:00</updated>
@@ -1067,8 +1067,8 @@ public String someMethod(String str, Integer size) {
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/jvmla-ji-hui-shou-ru-men.html"/>
-        <id>https://windshadow-mo.github.io/pub/jvmla-ji-hui-shou-ru-men.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/jvmla-ji-hui-shou-ru-men/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/jvmla-ji-hui-shou-ru-men/</id>
             <category term="JVM"/>
 
         <updated>2026-06-13T23:39:35+08:00</updated>
@@ -1117,8 +1117,8 @@ a = null; // 此时名为&quot;admin&quot;的User对象没有被引用了，成�
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/javaxian-cheng-zhong-duan.html"/>
-        <id>https://windshadow-mo.github.io/pub/javaxian-cheng-zhong-duan.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/javaxian-cheng-zhong-duan/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/javaxian-cheng-zhong-duan/</id>
             <category term="Java多线程"/>
 
         <updated>2026-06-13T23:39:15+08:00</updated>
@@ -1317,8 +1317,8 @@ main end
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/mysqlsuo-yin-xiang-jie.html"/>
-        <id>https://windshadow-mo.github.io/pub/mysqlsuo-yin-xiang-jie.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/mysqlsuo-yin-xiang-jie/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/mysqlsuo-yin-xiang-jie/</id>
             <category term="Mysql"/>
 
         <updated>2026-06-13T23:38:58+08:00</updated>
@@ -1471,8 +1471,8 @@ select * from tableName where lower(fb)= &#39;tom&#39;;
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/mysqlshi-wu.html"/>
-        <id>https://windshadow-mo.github.io/pub/mysqlshi-wu.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/mysqlshi-wu/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/mysqlshi-wu/</id>
             <category term="Mysql"/>
 
         <updated>2026-06-13T23:38:45+08:00</updated>
@@ -1551,8 +1551,8 @@ select * from tableName where lower(fb)= &#39;tom&#39;;
         <author>
             <name>莫千风</name>
         </author>
-        <link href="https://windshadow-mo.github.io/pub/javaxian-cheng-chi-yuan-lier.html"/>
-        <id>https://windshadow-mo.github.io/pub/javaxian-cheng-chi-yuan-lier.html</id>
+        <link href="https://windshadow-mo.github.io/pub/blog/javaxian-cheng-chi-yuan-lier/"/>
+        <id>https://windshadow-mo.github.io/pub/blog/javaxian-cheng-chi-yuan-lier/</id>
             <category term="Java多线程"/>
 
         <updated>2026-06-13T23:38:29+08:00</updated>

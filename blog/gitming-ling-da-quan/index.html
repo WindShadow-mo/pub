@@ -1,0 +1,291 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Git命令大全 - 千风殿</title><meta name="description" content="git config 配置 Git 的相关参数。&hellip;"><meta name="generator" content="Publii Open-Source CMS for Static Site"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism-black.css"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid-invert-filter.css"><link rel="canonical" href="https://windshadow-mo.github.io/pub/blog/gitming-ling-da-quan/"><link rel="alternate" type="application/atom+xml" href="https://windshadow-mo.github.io/pub/feed.xml" title="千风殿 - RSS"><link rel="alternate" type="application/json" href="https://windshadow-mo.github.io/pub/feed.json" title="千风殿 - JSON"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/assets/css/style.css?v=386585c2c294b1505cd2f6a55ba46ba4"><script type="application/ld+json">{"@context":"http://schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https://windshadow-mo.github.io/pub/blog/gitming-ling-da-quan/"},"headline":"Git命令大全","datePublished":"2026-06-13T23:29+08:00","dateModified":"2026-06-14T00:00+08:00","description":"git config 配置 Git 的相关参数。&hellip;","author":{"@type":"Person","name":"莫千风","url":"https://windshadow-mo.github.io/pub/authors/mo-qian-feng/"},"publisher":{"@type":"Organization","name":"莫千风"}}</script><noscript><style>img[loading] {
+                    opacity: 1;
+                }</style></noscript><style>.ti{fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}</style></head><body class="post-template"><header class="top js-header"><a class="logo" href="https://windshadow-mo.github.io/pub/">千风殿</a><nav class="navbar js-navbar"><button class="navbar__toggle js-toggle" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><span class="navbar__toggle-box"><span class="navbar__toggle-inner">Menu</span></span></button><ul class="navbar__menu"><li><a href="https://windshadow-mo.github.io/pub/" target="_self">首页</a></li><li><a href="https://windshadow-mo.github.io/pub/tags/" target="_self">博客</a></li></ul></nav><div class="search"><div class="search__overlay js-search-overlay"><div class="wrapper search__overlay-inner"></div></div><button class="search__btn btn--icon js-search-btn" aria-label="Search"><svg height="18" width="18" role="presentation" focusable="false"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#search"/></svg></button></div></header><main class="post"><article class="content"><div class="hero hero--noimage"><header class="hero__content"><div class="wrapper"><h1>Git命令大全</h1><div class="feed__meta content__meta"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" class="feed__author">莫千风</a> <time datetime="2026-06-13T23:29" class="feed__date">六月 13, 2026</time></div></div></header></div><div class="entry-wrapper content__entry"><h2 id="git-config">git config</h2><p>配置 Git 的相关参数。</p><p>Git 一共有3个配置文件：</p><ol><li>仓库级的配置文件：在仓库的 <code>.git/.gitconfig</code>，该配置文件只对所在的仓库有效。</li><li>全局配置文件：Mac 系统在 <code>~/.gitconfig</code>，Windows 系统在 <code>C:\Users\&lt;用户名&gt;\.gitconfig</code>。</li><li>系统级的配置文件：在 Git 的安装目录下（Mac 系统下安装目录在 <code>/usr/local/git</code>）的 <code>etc</code> 文件夹中的 <code>gitconfig</code>。</li></ol><pre><code class="language-shell"># 查看配置信息
+# --local：仓库级，--global：全局级，--system：系统级
+$ git config &lt;--local | --global | --system&gt; -l
+
+# 查看当前生效的配置信息
+$ git config -l
+
+# 编辑配置文件
+# --local：仓库级，--global：全局级，--system：系统级
+$ git config &lt;--local | --global | --system&gt; -e
+
+# 添加配置项
+# --local：仓库级，--global：全局级，--system：系统级
+$ git config &lt;--local | --global | --system&gt; --add &lt;name&gt; &lt;value&gt;
+
+# 获取配置项
+$ git config &lt;--local | --global | --system&gt; --get &lt;name&gt;
+
+# 删除配置项
+$ git config &lt;--local | --global | --system&gt; --unset &lt;name&gt;
+
+# 配置提交记录中的用户信息
+$ git config --global user.name &lt;用户名&gt;
+$ git config --global user.email &lt;邮箱地址&gt;
+
+# 更改Git缓存区的大小
+# 如果提交的内容较大，默认缓存较小，提交会失败
+# 缓存大小单位：B，例如：524288000（500MB）
+$ git config --global http.postBuffer &lt;缓存大小&gt;
+
+# 调用 git status/git diff 命令时以高亮或彩色方式显示改动状态
+$ git config --global color.ui true
+
+# 配置可以缓存密码，默认缓存时间15分钟
+$ git config --global credential.helper cache
+
+# 配置密码的缓存时间
+# 缓存时间单位：秒
+$ git config --global credential.helper &#39;cache --timeout=&lt;缓存时间&gt;&#39;
+
+# 配置长期存储密码
+$ git config --global credential.helper store
+</code></pre><h2 id="git-clone">git clone</h2><p>从远程仓库克隆一个版本库到本地。</p><pre><code class="language-bash"># 默认在当前目录下创建和版本库名相同的文件夹并下载版本到该文件夹下
+$ git clone &lt;远程仓库的网址&gt;
+
+# 指定本地仓库的目录
+$ git clone &lt;远程仓库的网址&gt; &lt;本地目录&gt;
+
+# -b 指定要克隆的分支，默认是master分支
+$ git clone &lt;远程仓库的网址&gt; -b &lt;分支名称&gt; &lt;本地目录&gt;
+</code></pre><h2 id="git-init">git init</h2><p>初始化项目所在目录，初始化后会在当前目录下出现一个名为 .git 的目录。</p><pre><code class="language-shell"># 初始化本地仓库，在当前目录下生成 .git 文件夹
+$ git init
+</code></pre><h2 id="git-status">git status</h2><p>查看本地仓库的状态。</p><pre><code class="language-shell"># 查看本地仓库的状态
+$ git status
+
+# 以简短模式查看本地仓库的状态
+# 会显示两列，第一列是文件的状态，第二列是对应的文件
+# 文件状态：A 新增，M 修改，D 删除，?? 未添加到Git中
+$ git status -s
+</code></pre><h2 id="git-remote">git remote</h2><p>操作远程库。</p><pre><code class="language-shell"># 列出已经存在的远程仓库
+$ git remote
+
+# 列出远程仓库的详细信息，在别名后面列出URL地址
+$ git remote -v
+$ git remote --verbose
+
+# 添加远程仓库
+$ git remote add &lt;远程仓库的别名&gt; &lt;远程仓库的URL地址&gt;
+
+# 修改远程仓库的别名
+$ git remote rename &lt;原远程仓库的别名&gt; &lt;新的别名&gt;
+
+# 删除指定名称的远程仓库
+$ git remote remove &lt;远程仓库的别名&gt;
+
+# 修改远程仓库的 URL 地址
+$ git remote set-url &lt;远程仓库的别名&gt; &lt;新的远程仓库URL地址&gt;
+</code></pre><h2 id="git-branch">git branch</h2><p>操作 Git 的分支命令。</p><pre><code class="language-shell"># 列出本地的所有分支，当前所在分支以 &quot;*&quot; 标出
+$ git branch
+
+# 列出本地的所有分支并显示最后一次提交，当前所在分支以 &quot;*&quot; 标出
+$ git branch -v
+
+# 创建新分支，新的分支基于上一次提交建立
+$ git branch &lt;分支名&gt;
+
+# 修改分支名称
+# 如果不指定原分支名称则为当前所在分支
+$ git branch -m [&lt;原分支名称&gt;] &lt;新的分支名称&gt;
+# 强制修改分支名称
+$ git branch -M [&lt;原分支名称&gt;] &lt;新的分支名称&gt;
+
+# 删除指定的本地分支
+$ git branch -d &lt;分支名称&gt;
+
+# 强制删除指定的本地分支
+$ git branch -D &lt;分支名称&gt;
+</code></pre><h2 id="git-checkout">git checkout</h2><p>检出命令，用于创建、切换分支等。</p><pre><code class="language-shell"># 切换到已存在的指定分支
+$ git checkout &lt;分支名称&gt;
+
+# 创建并切换到指定的分支，保留所有的提交记录
+# 等同于 &quot;git branch&quot; 和 &quot;git checkout&quot; 两个命令合并
+$ git checkout -b &lt;分支名称&gt;
+
+# 创建并切换到指定的分支，删除所有的提交记录
+$ git checkout --orphan &lt;分支名称&gt;
+
+# 替换掉本地的改动，新增的文件和已经添加到暂存区的内容不受影响
+$ git checkout &lt;文件路径&gt;
+</code></pre><h2 id="git-cherry-pick">git cherry-pick</h2><p>把已经提交的记录合并到当前分支。</p><pre><code class="language-shell"># 把已经提交的记录合并到当前分支
+$ git cherry-pick &lt;commit ID&gt;
+</code></pre><h2 id="git-add">git add</h2><p>把要提交的文件的信息添加到暂存区中。当使用 git commit 时，将依据暂存区中的内容来进行文件的提交。</p><pre><code class="language-shell"># 把指定的文件添加到暂存区中
+$ git add &lt;文件路径&gt;
+
+# 添加所有修改、已删除的文件到暂存区中
+$ git add -u [&lt;文件路径&gt;]
+$ git add --update [&lt;文件路径&gt;]
+
+# 添加所有修改、已删除、新增的文件到暂存区中，省略 &lt;文件路径&gt; 即为当前目录
+$ git add -A [&lt;文件路径&gt;]
+$ git add --all [&lt;文件路径&gt;]
+
+# 查看所有修改、已删除但没有提交的文件，进入一个子命令系统
+$ git add -i [&lt;文件路径&gt;]
+$ git add --interactive [&lt;文件路径&gt;]
+</code></pre><h2 id="git-commit">git commit</h2><p>将暂存区中的文件提交到本地仓库中。</p><pre><code class="language-shell"># 把暂存区中的文件提交到本地仓库，调用文本编辑器输入该次提交的描述信息
+$ git commit
+
+# 把暂存区中的文件提交到本地仓库中并添加描述信息
+$ git commit -m &quot;&lt;提交的描述信息&gt;&quot;
+
+# 把所有修改、已删除的文件提交到本地仓库中
+# 不包括未被版本库跟踪的文件，等同于先调用了 &quot;git add -u&quot;
+$ git commit -a -m &quot;&lt;提交的描述信息&gt;&quot;
+
+# 修改上次提交的描述信息
+$ git commit --amend
+</code></pre><h2 id="git-fetch">git fetch</h2><p>从远程仓库获取最新的版本到本地的 tmp 分支上。</p><pre><code class="language-shell"># 将远程仓库所有分支的最新版本全部取回到本地
+$ git fetch &lt;远程仓库的别名&gt;
+
+# 将远程仓库指定分支的最新版本取回到本地
+$ git fetch &lt;远程主机名&gt; &lt;分支名&gt;
+</code></pre><h2 id="git-merge">git merge</h2><p>合并分支。</p><pre><code class="language-shell"># 把指定的分支合并到当前所在的分支下
+$ git merge &lt;分支名称&gt;
+</code></pre><h2 id="git-diff">git diff</h2><p>比较版本之间的差异。</p><pre><code class="language-shell"># 比较当前文件和暂存区中文件的差异，显示没有暂存起来的更改
+$ git diff
+
+# 比较暂存区中的文件和上次提交时的差异
+$ git diff --cached
+$ git diff --staged
+
+# 比较当前文件和上次提交时的差异
+$ git diff HEAD
+
+# 查看从指定的版本之后改动的内容
+$ git diff &lt;commit ID&gt;
+
+# 比较两个分支之间的差异
+$ git diff &lt;分支名称&gt; &lt;分支名称&gt;
+
+# 查看两个分支分开后各自的改动内容
+$ git diff &lt;分支名称&gt;...&lt;分支名称&gt;
+</code></pre><h2 id="git-pull">git pull</h2><p>从远程仓库获取最新版本并合并到本地。</p><p>首先会执行 <code>git fetch</code>，然后执行 <code>git merge</code>，把获取的分支的 HEAD 合并到当前分支。</p><pre><code class="language-shell"># 从远程仓库获取最新版本。
+$ git pull
+</code></pre><h2 id="git-push">git push</h2><p>把本地仓库的提交推送到远程仓库。</p><pre><code class="language-shell"># 把本地仓库的分支推送到远程仓库的指定分支
+$ git push &lt;远程仓库的别名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;
+
+# 删除指定的远程仓库的分支
+$ git push &lt;远程仓库的别名&gt; :&lt;远程分支名&gt;
+$ git push &lt;远程仓库的别名&gt; --delete &lt;远程分支名&gt;
+# 强制push，慎用！！！
+$ git push -f &lt;远程仓库的别名&gt; :&lt;远程分支名&gt;
+</code></pre><h2 id="git-log">git log</h2><p>显示提交的记录。</p><pre><code class="language-bash"># 打印所有的提交记录
+$ git log
+
+# 打印从第一次提交到指定的提交的记录
+$ git log &lt;commit ID&gt;
+
+# 打印指定数量的最新提交的记录
+$ git log -&lt;指定的数量&gt;
+</code></pre><h2 id="git-rebase">git rebase</h2><ul><li><strong>对远程分支的rebase是指，将自己的提交追加在别人的提交之后，如果自己的提交和远程的提交有相同的文件的改动，远程提交有可能被刷掉</strong></li></ul><pre><code class="language-shell"># 打开一个编辑器，显示最后3次提交的日志，从上往下越来越新，与git log显示顺序相反
+git rebase -i HEAD 3
+#完成编辑后执行
+git rebase -continue
+</code></pre><p>rebase的目的是打开提交的历史，git会让你在一个新的分支修改内容，git rebase -continue则是让你回到之前的版本</p><ul><li>对本地分支的rebase 是指将自己本地分支的所有提交合并成为一个，可解决多次小改动的重复提交等</li></ul><h2 id="git-reset">git reset</h2><p>还原提交记录。</p><pre><code class="language-shell"># 重置暂存区，但文件不受影响
+# 相当于将用 &quot;git add&quot; 命令更新到暂存区的内容撤出暂存区，可以指定文件
+# 没有指定 commit ID 则默认为当前 HEAD
+$ git reset [&lt;文件路径&gt;]
+$ git reset --mixed [&lt;文件路径&gt;]
+
+# 将 HEAD 的指向改变，撤销到指定的提交记录，文件未修改
+$ git reset &lt;commit ID&gt;
+$ git reset --mixed &lt;commit ID&gt;
+
+# 将 HEAD 的指向改变，撤销到指定的提交记录，文件未修改
+# 相当于调用 &quot;git reset --mixed&quot; 命令后又做了一次 &quot;git add&quot;
+$ git reset --soft &lt;commit ID&gt;
+
+# 将 HEAD 的指向改变，撤销到指定的提交记录，文件也修改了
+$ git reset --hard &lt;commit ID&gt;
+</code></pre><h2 id="git-revert">git revert</h2><p>生成一个新的提交来撤销某次提交，此次提交之前的所有提交都会被保留。</p><pre><code class="language-shell"># 生成一个新的提交来撤销某次提交
+$ git revert &lt;commit ID&gt;
+</code></pre><h2 id="git-stash">git stash</h2><pre><code class="language-shell"># 执行存储时，添加备注，方便查找，只有git stash 也要可以的，但查找时不方便识别。
+git stash &lt;save &quot;save message&quot;&gt;
+
+# 查看stash了哪些存储
+git stash list
+
+# 显示做了哪些改动，默认show第一个存储,如果要显示其他存贮，后面加stash@{$num}，比如第二个 git stash show stash@{1}
+git stash show
+
+# 显示第一个存储的改动，如果想显示其他存存储，命令：git stash show  stash@{$num}  -p ，比如第二个：git stash show  stash@{1}  -p
+git stash show -p
+
+# 应用某个存储,但不会把存储从存储列表中删除，默认使用第一个存储,即stash@{0}，如果要使用其他个，git stash apply stash@{$num} ， 比如第二个：git stash apply stash@{1} 
+git stash apply
+
+# 命令恢复之前缓存的工作目录，将缓存堆栈中的对应stash删除，并将对应修改应用到当前的工作目录下,默认为第一个stash,即stash@{0}，如果要应用并删除其他stash，命令：git stash pop stash@{$num} ，比如应用并删除第二个：git stash pop stash@{1}
+git stash pop
+
+# 丢弃stash@{$num}存储，从列表中删除这个存储
+git stash drop
+
+# 删除所有缓存的stash
+git stash clear
+</code></pre><h2 id="git-tag">git tag</h2><p>操作标签的命令。</p><pre><code class="language-shell"># 打印所有的标签
+$ git tag
+
+# 添加轻量标签，指向提交对象的引用，可以指定之前的提交记录
+$ git tag &lt;标签名称&gt; [&lt;commit ID&gt;]
+
+# 添加带有描述信息的附注标签，可以指定之前的提交记录
+$ git tag -a &lt;标签名称&gt; -m &lt;标签描述信息&gt; [&lt;commit ID&gt;]
+
+# 切换到指定的标签
+$ git checkout &lt;标签名称&gt;
+
+# 查看标签的信息
+$ git show &lt;标签名称&gt;
+
+# 删除指定的标签
+$ git tag -d &lt;标签名称&gt;
+
+# 将指定的标签提交到远程仓库
+$ git push &lt;远程仓库的别名&gt; &lt;标签名称&gt;
+
+# 将本地所有的标签全部提交到远程仓库
+$ git push &lt;远程仓库的别名&gt; –tags
+</code></pre><h2 id="git-mv">git mv</h2><p>重命名文件或者文件夹。</p><pre><code class="language-shell"># 重命名指定的文件或者文件夹
+$ git mv &lt;源文件/文件夹&gt; &lt;目标文件/文件夹&gt;
+</code></pre><h2 id="git-rm">git rm</h2><p>删除文件或者文件夹。</p><pre><code class="language-shell"># 移除跟踪指定的文件，并从本地仓库的文件夹中删除
+$ git rm &lt;文件路径&gt;
+
+# 移除跟踪指定的文件夹，并从本地仓库的文件夹中删除
+$ git rm -r &lt;文件夹路径&gt;
+
+# 移除跟踪指定的文件，在本地仓库的文件夹中保留该文件
+$ git rm --cached
+</code></pre><h2 id="git操作场景示例">Git操作场景示例</h2><h3 id="1-删除掉本地不存在的远程分支">1. 删除掉本地不存在的远程分支</h3><p>多人合作开发时，如果远程的分支被其他开发删除掉，在本地执行 <code>git branch --all</code> 依然会显示该远程分支，可使用下列的命令进行删除：</p><pre><code class="language-shell"># 使用 pull 命令，添加 -p 参数
+$ git pull -p
+
+# 等同于下面的命令
+$ git fetch -p
+$ git fetch --prune origin
+</code></pre><h3 id="2git-stash解决冲突">2.git stash解决冲突</h3><p>使用IDEA的Stash Changes 和 unStash Changes 来解决冲突。</p><ul><li>Stash Changes ： 作用：本地的全部改动临时保存到本地仓库，并撤销了本地的所有改动 stash的好处是，可以先将你的改动暂存到本地仓库中，随时可以取出来再用，但是不用担心下次push到服务器时，把不想提交的改动也push到服务器上，因为Stash Changes的内容不参与commit和push。</li><li>unStash Changes 作用：将之前保存得临时改动，取出并合并带本地。</li></ul><p>步骤：</p><ol><li><p>我们选择项目右键–Git–Repository–Stash Changes</p><p>stash完后你会发现你本地进行的一些修改都已经不存在了，这样我们就可以和远程仓库合并了，冲突先去掉了，git pull 顺利成功。</p></li><li><p>我们选择项目右键–Git–Repository–pull将线上得代码拉取到本地</p></li><li><p>现在我们再把之前保存的更改取出来 选择项目右键–Git–Repository–UnStash Changes，手动解决冲突</p></li></ol><p>此操作比较实用。</p><h3 id="3重置全部提交的作者和邮箱">3.重置全部提交的作者和邮箱</h3><p>脚本如下，其中 <code>-f</code>参数强制执行</p><pre><code class="language-shell">git filter-branch -f --env-filter &#39;
+OLD_EMAIL=&quot;xxx@xx.com&quot;
+CORRECT_NAME=&quot;User_new&quot;
+CORRECT_EMAIL=&quot;yyy@yyy.com&quot;
+if [ &quot;$GIT_COMMITTER_EMAIL&quot; = &quot;$OLD_EMAIL&quot; ]
+then
+    export GIT_COMMITTER_NAME=&quot;$CORRECT_NAME&quot;
+    export GIT_COMMITTER_EMAIL=&quot;$CORRECT_EMAIL&quot;
+fi
+if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;$OLD_EMAIL&quot; ]
+then
+    export GIT_AUTHOR_NAME=&quot;$CORRECT_NAME&quot;
+    export GIT_AUTHOR_EMAIL=&quot;$CORRECT_EMAIL&quot;
+fi
+&#39; --tag-name-filter cat -- --branches --tags
+</code></pre></div><footer class="content__footer"><div class="entry-wrapper"><p class="content__updated">This article was updated on 六月 14, 2026</p><div class="content__actions"><ul class="content__tag"><li><a href="https://windshadow-mo.github.io/pub/tags/git/">Git</a></li></ul><div class="content__share"><button class="btn--icon content__share-button js-content__share-button"><svg width="20" height="20" aria-hidden="true"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#share"></use></svg> <span>Share It</span></button><div class="content__share-popup js-content__share-popup"></div></div></div><div class="content__bio bio"><div><h3 class="h4 bio__name"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" rel="author">莫千风</a></h3><div class="bio__desc"><p>殿主</p></div></div></div></div></footer></article></main><footer class="footer footer--glued"><div class="wrapper"><div class="footer__copyright"><p>© 2015-2025 千风殿</p></div><button id="backToTop" class="footer__bttop" aria-label="Back to top" title="Back to top"><svg width="20" height="20"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#toparrow"/></svg></button></div></footer><script defer="defer" src="https://windshadow-mo.github.io/pub/assets/js/scripts.min.js?v=dafec4f87fead6718cb125f0b0fc8441"></script><script>window.publiiThemeMenuConfig={mobileMenuMode:'sidebar',animationSpeed:300,submenuWidth: 'auto',doubleClickTime:500,mobileMenuExpandableSubmenus:true,relatedContainerForOverlayMenuSelector:'.top'};</script><script>var images = document.querySelectorAll('img[loading]');
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                images[i].classList.add('is-loaded');
+            } else {
+                images[i].addEventListener('load', function () {
+                    this.classList.add('is-loaded');
+                }, false);
+            }
+        }</script><script defer="defer" src="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism.js"></script><script src="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid.min.js"></script><script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script></body></html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spring数据校验体系 - 千风殿</title><meta name="description" content="此篇将大致领略一下Spring的数据校验体系及应用，在此之前你需要提前了解Bean Validation"><meta name="generator" content="Publii Open-Source CMS for Static Site"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism-black.css"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid-invert-filter.css"><link rel="canonical" href="https://windshadow-mo.github.io/pub/blog/springshu-ju-xiao-yan-ti-xi/"><link rel="alternate" type="application/atom+xml" href="https://windshadow-mo.github.io/pub/feed.xml" title="千风殿 - RSS"><link rel="alternate" type="application/json" href="https://windshadow-mo.github.io/pub/feed.json" title="千风殿 - JSON"><link rel="stylesheet" href="https://windshadow-mo.github.io/pub/assets/css/style.css?v=386585c2c294b1505cd2f6a55ba46ba4"><script type="application/ld+json">{"@context":"http://schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https://windshadow-mo.github.io/pub/blog/springshu-ju-xiao-yan-ti-xi/"},"headline":"Spring数据校验体系","datePublished":"2026-06-14T00:02+08:00","dateModified":"2026-06-14T00:39+08:00","description":"此篇将大致领略一下Spring的数据校验体系及应用，在此之前你需要提前了解Bean Validation","author":{"@type":"Person","name":"莫千风","url":"https://windshadow-mo.github.io/pub/authors/mo-qian-feng/"},"publisher":{"@type":"Organization","name":"莫千风"}}</script><noscript><style>img[loading] {
+                    opacity: 1;
+                }</style></noscript><style>.ti{fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}</style></head><body class="post-template"><header class="top js-header"><a class="logo" href="https://windshadow-mo.github.io/pub/">千风殿</a><nav class="navbar js-navbar"><button class="navbar__toggle js-toggle" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><span class="navbar__toggle-box"><span class="navbar__toggle-inner">Menu</span></span></button><ul class="navbar__menu"><li><a href="https://windshadow-mo.github.io/pub/" target="_self">首页</a></li><li><a href="https://windshadow-mo.github.io/pub/tags/" target="_self">博客</a></li></ul></nav><div class="search"><div class="search__overlay js-search-overlay"><div class="wrapper search__overlay-inner"></div></div><button class="search__btn btn--icon js-search-btn" aria-label="Search"><svg height="18" width="18" role="presentation" focusable="false"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#search"/></svg></button></div></header><main class="post"><article class="content"><div class="hero hero--noimage"><header class="hero__content"><div class="wrapper"><h1>Spring数据校验体系</h1><div class="feed__meta content__meta"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" class="feed__author">莫千风</a> <time datetime="2026-06-14T00:02" class="feed__date">六月 14, 2026</time></div></div></header></div><div class="entry-wrapper content__entry"><p>此篇将大致领略一下Spring的数据校验体系及应用，在此之前你需要提前了解<a href="/BeanValidation">Bean Validation</a></p><h2 id="spring-validation">Spring Validation</h2><p>spring在spring-context中设计了自己的一套校验体系，位于<code>org.springframework.validation</code>包下，与Bean Validation类似，核心也是校验器（<code>org.springframework.validation.Validator</code>）</p><pre><code class="language-java">package org.springframework.validation;
+public interface Validator {
+    boolean supports(Class&lt;?&gt; clazz);
+    void validate(Object target, Errors errors);
+}
+</code></pre><p>与Bean Validation校验器不同，spring校验器显得更抽象些，前者通过约束注解+约束验证器组合校验JavaBean，后者更多是泛化了校验过程。spring校验器通过supports方法声明了校验器支持的类型，提供validate方法进行后续的校验，校验结果通过Errors对象回调保存。</p><p>就使用场景来说，spring校验器在框架内部应用的比较多，如spring-mvc数据绑定过程、配置bean的数据绑定等。</p><p>下面以数据绑定操作为例</p><p>定义普通的java bean与其spring校验器，基础的非空等校验可使用<code>ValidationUtils</code>辅助之。</p><pre><code class="language-java">// ... lombok
+public class Person {
+    private String email;
+}
+
+// 校验器
+public class PersonValidator implements Validator {
+
+        @Override
+        public boolean supports(Class&lt;?&gt; clazz) {
+            return Person.class.isAssignableFrom(clazz);
+        }
+
+        @Override
+        public void validate(Object target, Errors errors) {
+            // 字段名
+            final String filed = &quot;email&quot;;
+            // 错误码（通常是国际化消息code）
+            final String errCode = &quot;ws.error-code.person.email&quot;;
+            ValidationUtils.rejectIfEmptyOrWhitespace(errors, filed, errCode, &quot;邮箱地址不能为空&quot;);
+            // 其它自定义实现的校验
+            String email = (String)errors.getFieldValue(filed);
+            if (!isEmail(email)) {
+                // 以error对象写入检验结果，以拒绝xx字段等操作写入
+                errors.rejectValue(filed, errCode, &quot;邮箱地址无效&quot;);
+            }
+        }
+
+        private boolean isEmail(String email) {
+            // ... todo
+        }
+    }
+</code></pre><p>数据绑定操作使用spring校验器</p><pre><code class="language-java">Person person = new Person();
+// 绑定器
+DataBinder binder = new DataBinder(person);
+// 设置spring校验器
+binder.setValidator(new PersonValidator());
+// 属性值键值对
+MutablePropertyValues pvs = new MutablePropertyValues();
+pvs.addPropertyValue(&quot;email&quot;, &quot;123465ws.com&quot;);
+// 绑定
+binder.bind(pvs);
+// 验证绑定对象，使用已经添加的Validator
+binder.validate();
+// 获取绑定结果
+BindingResult result = binder.getBindingResult();
+if (result.hasFieldErrors()) {
+    throw new BindException(result);
+} else {
+    System.out.println(person);
+}
+</code></pre><p>显然spring校验器可自定义的能力更宽泛些，校验逻辑实现完全开放。</p><h2 id="spring应用bean-validation">Spring应用Bean Validation</h2><p>作为框架来说，spring是要把校验这个基础能力单独封装起来的，引入其它的校验框架时，应该要去适配对接spring的校验体系，达到插件化的效果。故而spring在其Validator的实现中也适配了Bean Validation。</p><p>其关键类便是：<code>org.springframework.validation.SmartValidator</code>与<code>org.springframework.validation.beanvalidation.SpringValidatorAdapter</code></p><p>其中<code>SmartValidator</code>重载了validate校验方法，提供了分组校验的可能，即validationHints参数，但此处也是以Object参数化处理。</p><pre><code class="language-java">package org.springframework.validation;
+public interface SmartValidator extends Validator {
+    void validate(Object target, Errors errors, Object... validationHints);
+    default void validateValue(
+            Class&lt;?&gt; targetType, String fieldName, @Nullable Object value, Errors errors, Object... validationHints) {
+        throw new IllegalArgumentException(&quot;Cannot validate individual value for &quot; + targetType);
+    }
+}
+</code></pre><p>而<code>SpringValidatorAdapter</code>更是将Bean Validation适配进来，同时实现两个体系的Validator</p><pre><code class="language-java">package org.springframework.validation.beanvalidation;
+public class SpringValidatorAdapter implements SmartValidator, javax.validation.Validator {
+    // ...
+}
+</code></pre><p>继承关系如图</p><figure class="post__image"><img loading="lazy" src="./media/files/Validator.png" alt="image" data-is-external-image="true"></figure><p><code>SpringValidatorAdapter</code>借助Bean Validation的Validator来实现spring的Validator。</p><p>因此在前文数据绑定过程中，我们可使用该校验器来使用Bean Validation的能力</p><p>此时先给Person类加上约束</p><pre><code class="language-java">// ... lombok
+public class Person {
+    @Email
+    @Size(max = 30, groups = Group.Insert.class)
+    private String email;
+}
+</code></pre><p>使用SpringValidatorAdapter作为Person的spring校验器</p><pre><code class="language-java">Person person = new Person();
+DataBinder binder = new DataBinder(person);
+// 构建Bean Validation的校验器，并提供给spring的适配器
+javax.validation.Validator javaxValidator = Validation.buildDefaultValidatorFactory()
+                .getValidator();
+SpringValidatorAdapter adapter = new SpringValidatorAdapter(javaxValidator);
+// 设置spring校验器
+binder.setValidator(adapter);
+// 属性值键值对
+MutablePropertyValues pvs = new MutablePropertyValues();
+pvs.addPropertyValue(&quot;email&quot;, &quot;123465ws.com&quot;);
+// 绑定
+binder.bind(pvs);
+// 验证绑定对象
+binder.validate();
+// 可分组校验
+binder.validate(Group.Insert.class);
+// 获取绑定结果
+BindingResult result = binder.getBindingResult();
+if (result.hasFieldErrors()) {
+    throw new BindException(result);
+} else {
+    System.out.println(person);
+}
+</code></pre><p>到此Bean Validation与Spring Validation的异同与联系介绍完毕。</p><hr><h2 id="spring-校验功能的应用">Spring 校验功能的应用</h2><p>显然实际场景中spring更多是借助Bean Validation来“成就”自己的校验体系。</p><p>开发者在实际开发中若是使用Bean Validation的原始校验操作，需要编写过于重复的代码，spring肯定不会“坐以待毙”，势必进行了封装。那么在日常开发中，spring的校验体系（能力）是如何激活的呢？</p><p>核心便是</p><p><code>org.springframework.validation.annotation.Validated</code>注解，它便是开启校验的关键开关。</p><h3 id="应用于spring-bean的装配验证">应用于Spring Bean的装配验证</h3><p>在SpringBoot中，通常我们在设计配置类时，会有一定约束，此时可以借助spring帮我们进行字段的校验，确保配置类bean的有效。只需要在配置类上加以@Validated注解修饰，spring在创建spring bean过程中，bean初始化之际校验该bean。</p><pre><code class="language-java">@Validated
+@ConfigurationProperties(prefix = &quot;custom.config&quot;)
+public class CustomConfig {
+    
+    @Email
+    @NotNull
+    private String adviceEmail;
+    // ...
+}
+</code></pre><h3 id="应用于spring-bean的方法验证增强">应用于Spring Bean的方法验证增强</h3><p>Bean Validation提供了方法参数和返回值验证的能力，spring整合Bean Validation后将这一步骤通过aop来增强实现。</p><p>SpringBoot中Validation的自动装配配置</p><pre><code class="language-java">package org.springframework.boot.autoconfigure.validation;
+// ...
+public class ValidationAutoConfiguration {
+    @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @ConditionalOnMissingBean(Validator.class)
+    public static LocalValidatorFactoryBean defaultValidator() {
+        // ...
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public static MethodValidationPostProcessor methodValidationPostProcessor(Environment environment, @Lazy Validator validator) {
+         // ...
+    }
+}
+</code></pre><p>其中 LocalValidatorFactoryBean便是实际使用的校验器Validator，MethodValidationPostProcessor 负责处理需要增加方法层面校验的bean，通过aop为其提供校验能力。</p><h4 id="基本使用">基本使用</h4><p>Spring中<code>@Validated</code> 注解是开启校验的关键。</p><p>在SpringBean上使用<code>@Validated</code> 修饰，Spring将会对其进行动态代理，以提供校验方法参数和返回值的能力</p><pre><code class="language-java">@Validated
+@Service
+public class SomeService {
+    @NotNull
+     public Integer validateBasic(@NotBlank String str) {
+        // ...
+    }
+}
+</code></pre><p>后续该SpringBean在任一地方使用时，将会校验方法入参与返回值是否满足约束，校验不通过则以ConstraintViolationException异常通知。</p><h4 id="分组校验">分组校验</h4><p>具有校验能力的SpringBean如何指定校验的组呢？</p><p>只需要在<code>@Validated</code>注解中声明即可</p><pre><code class="language-java">@Validated(Group.Update.class) // 声明校验组
+@Service
+public class SomeService {}
+</code></pre><h3 id="应用于spring-mvc参数绑定的验证">应用于Spring MVC参数绑定的验证</h3><p>在web-mvc的controller中，在以下参数绑定场景下可以使用@Validated注解对该参数进行校验。</p><ul><li><p>@RequestBody绑定</p><p>通过@RequestBody注解将Request-body的内容（通常是json）绑定到java bean时，可使用@Validated开启校验，由于是在方法参数上开启，所以更能灵活的指定分组，如新增接口使用校验Insert组，更新接口使用Update组。</p><pre><code class="language-java">@RestController
+@RequestMapping(&quot;/api/v1&quot;)
+public class BeanValidatedController {
+    @PostMapping(&quot;/person&quot;)
+    public RestResponse handler(@Validated @RequestBody Person person) {
+        // ...
+    }
+}
+</code></pre></li><li><p>@ModelAttribute绑定</p><p>通过@ModelAttribute注解将web视图<code>org.springframework.ui.Model</code>中的对象绑定到参数上时，可支持校验</p><pre><code class="language-java">@RestController
+@RequestMapping(&quot;/api/v2&quot;)
+public class BeanValidatedController {
+    @PostMapping(&quot;/person&quot;)
+    public RestResponse handler(@Validated @ModelAttribute Person person) {
+        // ...
+    }
+}
+</code></pre></li><li><p>@RequestPart绑定（非文件类型<code>MultipartFile</code>）</p><p>通过@RequestPart注解将表单中的部分数据绑定到参数上时（如json），可支持校验，<code>MultipartFile</code>不支持校验</p><pre><code>@RestController
+@RequestMapping(&quot;/api/v2&quot;)
+public class BeanValidatedController {
+    @PostMapping(&quot;/form&quot;)
+    public RestResponse handler(@Validated @RequestPart Person person) {
+        // ...
+    }
+}
+</code></pre></li></ul><p>上述参数绑定场景的校验能力均来自于<code>org.springframework.web.bind.WebDataBinder</code>，它是web-mvc参数绑定的核心组件。其继承于前文提到的DataBinder</p><figure class="post__image"><img loading="lazy" src="./media/files/web-binder.png" alt="image" data-is-external-image="true"></figure><p>值得注意的是，在web-mvc参数绑定校验中，参数绑定的能力来源于对应的参数解析器<code>HandlerMethodArgumentResolver</code>，对绑定参数的校验逻辑是其内部解析流程之一，通过源码分析可知，上述几种场景的绑定是支持校验的，激活开关为@Validated注解（实际上@Valid注解也是开关，spring也做了对 @Valid注解的支持）</p><p>而诸如通过@RequestParam注解绑定String等基础类型时，是不支持校验的</p><pre><code class="language-java">@RestController
+@RequestMapping(&quot;/api/v2&quot;)
+public class BeanValidatedController {
+    // 此处web-mvc不支持对 email 的校验
+    @PostMapping(&quot;/query&quot;)
+    public RestResponse handler(@Validated @RequestParam @Email String email) {
+        // ...
+    }
+}
+</code></pre><p>如果想要支持上述校验，我们需要退回到《Bean Validation应用于Spring Bean的方法验证增强》的功能点上，对controller开启校验的aop代理增强。</p><p>改写如下</p><pre><code class="language-java">@Validated // 对spring bean 开启校验的aop代理
+@RestController
+@RequestMapping(&quot;/api/v2&quot;)
+public class BeanValidatedController {
+    // 此处web-mvc不支持对 email 的校验
+    @PostMapping(&quot;/query&quot;)
+    public RestResponse handler(@RequestParam @Email String email) {
+        // ...
+    }
+}
+</code></pre><p>这就意味着当我们对controller加以@Validated 注解修饰时，controller将得到校验的aop代理增强，同时由于web-mvc对参数绑定的校验支持，会同时有两套校验逻辑加在controller上。</p><p>如果我们代码如下编写时，即如badHandler方法使用@Valid 修饰参数，会触发两次校验！</p><pre><code class="language-java">@Validated // 对spring bean 开启校验的aop代理
+@RestController
+@RequestMapping(&quot;/api/v2&quot;)
+public class BeanValidatedController {
+    // 对参数绑定开启校验
+    @PostMapping(&quot;/person-bad&quot;)
+    public RestResponse badHandler(@Valid @RequestBody Person person) {
+        // ...
+    }
+    
+    @PostMapping(&quot;/person-good&quot;)
+    public RestResponse goodHandler(@Validated @RequestBody Person person) {
+        // ...
+    }
+}
+</code></pre><ol><li><p>一次校验是web-mvc参数绑定过程的校验（开关为 @Valid）</p><p>触发机制为：controller参数绑定机制 + @Valid修饰参数激活校验开关</p><p>此时是spring的校验器在工作；</p></li><li><p>另外一次是aop代理增强的校验</p><p>触发机制为：@Validated开启aop代理 + @Valid修饰参数激活Bean Validation方法级验证</p><p>此时是Bean Validation的校验器在工作；</p></li></ol><p>两者的原理大不相同。</p><p>故上述代码badHandler方法会触发两次校验，goodHandler仅触发web-mvc参数绑定过程的校验。</p><hr><p>到此Spring的数据校验体系的应用与部分原理介绍完毕。</p></div><footer class="content__footer"><div class="entry-wrapper"><p class="content__updated">This article was updated on 六月 14, 2026</p><div class="content__actions"><ul class="content__tag"><li><a href="https://windshadow-mo.github.io/pub/tags/spring/">Spring</a></li></ul><div class="content__share"><button class="btn--icon content__share-button js-content__share-button"><svg width="20" height="20" aria-hidden="true"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#share"></use></svg> <span>Share It</span></button><div class="content__share-popup js-content__share-popup"></div></div></div><div class="content__bio bio"><div><h3 class="h4 bio__name"><a href="https://windshadow-mo.github.io/pub/authors/mo-qian-feng/" rel="author">莫千风</a></h3><div class="bio__desc"><p>殿主</p></div></div></div></div></footer></article></main><footer class="footer footer--glued"><div class="wrapper"><div class="footer__copyright"><p>© 2015-2025 千风殿</p></div><button id="backToTop" class="footer__bttop" aria-label="Back to top" title="Back to top"><svg width="20" height="20"><use xlink:href="https://windshadow-mo.github.io/pub/assets/svg/svg-map.svg#toparrow"/></svg></button></div></footer><script defer="defer" src="https://windshadow-mo.github.io/pub/assets/js/scripts.min.js?v=dafec4f87fead6718cb125f0b0fc8441"></script><script>window.publiiThemeMenuConfig={mobileMenuMode:'sidebar',animationSpeed:300,submenuWidth: 'auto',doubleClickTime:500,mobileMenuExpandableSubmenus:true,relatedContainerForOverlayMenuSelector:'.top'};</script><script>var images = document.querySelectorAll('img[loading]');
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                images[i].classList.add('is-loaded');
+            } else {
+                images[i].addEventListener('load', function () {
+                    this.classList.add('is-loaded');
+                }, false);
+            }
+        }</script><script defer="defer" src="https://windshadow-mo.github.io/pub/media/plugins/syntaxHighlighter/prism.js"></script><script src="https://windshadow-mo.github.io/pub/media/plugins/mermaidSupport/mermaid.min.js"></script><script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script></body></html>
